@@ -15,6 +15,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.android.synthetic.main.activity_main.*
 
+@Suppress("deprecation")
 class MainActivity : AppCompatActivity() {
 
     val PERMISSIONS = arrayOf(
@@ -30,6 +31,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        tabHost.setup()
+
+        var tabSpecMap = tabHost.newTabSpec("tabMap").setIndicator("화장실 찾기")
+        tabSpecMap.setContent(R.id.tabMap)
+        tabHost.addTab(tabSpecMap)
+
+        var tabSpecMy = tabHost.newTabSpec("tabMy").setIndicator("My 저장")
+        tabSpecMy.setContent(R.id.tabMy)
+        tabHost.addTab(tabSpecMy)
+
+        // 최초 탭 지정
+        tabHost.currentTab = 0
 
         mapView.onCreate(savedInstanceState)
 
@@ -128,4 +142,5 @@ class MainActivity : AppCompatActivity() {
         super.onLowMemory()
         mapView.onLowMemory()
     }
+
 }
