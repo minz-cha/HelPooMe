@@ -52,7 +52,6 @@ class RequestActivity : AppCompatActivity() {
             if (ContextCompat.checkSelfPermission(this,
                     permission) != PackageManager.PERMISSION_GRANTED
             ) {
-
                 rejectedPermissionList.add(permission)
             }
         }

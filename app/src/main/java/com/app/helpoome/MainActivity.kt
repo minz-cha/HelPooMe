@@ -4,18 +4,27 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.location.Location
 import android.location.LocationManager
+import android.os.AsyncTask
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.toBitmap
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.URL
 
-@Suppress("deprecation")
 class MainActivity : AppCompatActivity() {
 
     val PERMISSIONS = arrayOf(
@@ -25,7 +34,7 @@ class MainActivity : AppCompatActivity() {
 
     val REQUEST_PERMISSION_CODE = 1
     val DEFAULT_ZOOM_LEVEL = 17f
-    val CITY_HALL = LatLng(37.5662952, 126.97794509999994)
+    val CITY_HALL = LatLng(37.658801, 126.775034)
     var googleMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +61,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
         }
-
         myLocationButton.setOnClickListener { onMyLocationButtonClick() }
     }
 
@@ -143,4 +151,108 @@ class MainActivity : AppCompatActivity() {
         mapView.onLowMemory()
     }
 
+    val API_KEY = "553c3eaf75784139889dbf32e160aa9d" //공공데이터 API_KEY
+    var task: ToiletReadTask? = null
+    var toilets = JSONArray()
+
+    val bitmap by lazy {
+        val bitmap = ResourcesCompat.getDrawable(resources,
+            R.drawable.ic_baseline_person_pin_circle_24,
+            null)
+            ?.toBitmap()
+        Bitmap.createScaledBitmap(bitmap!!, 100, 100, false)
+    }
+
+    fun JSONArray.merge(anotherArray: JSONArray) {
+        for (i in 0 until anotherArray.length()) {
+            this.put(anotherArray.get(i))
+        }
+    }
+
+    fun readData(startIndex: Int, lastIndex: Int): JSONObject {
+        val url =
+            URL("https://openapi.gg.go.kr/Publtolt?" + "${API_KEY}&Type=json&${startIndex}&${lastIndex}")
+        val connection = url.openConnection()
+        val data = connection.getInputStream().readBytes().toString(charset("UTF-8"))
+        return JSONObject(data)
+    }
+
+    inner class ToiletReadTask : AsyncTask<Void, JSONArray, String>() {
+
+        override fun onPreExecute() {
+
+            googleMap?.clear()
+            toilets = JSONArray()
+        }
+
+        override fun doInBackground(vararg params: Void?): String {
+
+            val step = 1000
+            var startIndex = 1
+            var lastIndex = step
+            var totalCount = 0
+
+            do {
+                if (isCancelled) break
+
+                if (totalCount != 0) {
+                    startIndex += step
+                    lastIndex += step
+                }
+                val jsonObject = readData(startIndex, lastIndex)
+
+                val check1 = jsonObject.getJSONArray("Publtolt")
+                val row = check1.getJSONObject(1).getJSONArray("row")
+
+                for (i in 0 until row.length()) {
+                    val name2 = row.getJSONObject(i)
+                    Log.d("objectCheck", name2.getString("REFINE_WGS84_LOGT"))
+                }
+
+                totalCount = row.length()
+
+                val rows = check1.getJSONObject(1).getJSONArray("row")
+                toilets.merge(rows)
+                publishProgress(rows)
+
+            } while (lastIndex < totalCount)
+
+            return "complete"
+        }
+
+        override fun onProgressUpdate(vararg values: JSONArray?) {
+            val array = values[0]
+            array?.let {
+                for (i in 0 until array.length()) {
+                    addMarkers(array.getJSONObject(i))
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        task?.cancel(true)
+        task = ToiletReadTask()
+        task?.execute()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        task?.cancel(true)
+        task = null
+    }
+
+    fun addMarkers(toilet: JSONObject) {
+        googleMap?.apply {
+            addMarker(
+                MarkerOptions()
+                    .position(LatLng(toilet.getDouble("REFINE_WGS84_LAT"),
+                        toilet.getDouble("REFINE_WGS84_LOGT")))
+                    .title(toilet.getString("MANAGE_INST_NM"))
+                    .snippet(toilet.getString("REFINE_ROADNM_ADDR"))
+                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+            )
+        }
+    }
 }
