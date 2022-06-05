@@ -5,7 +5,8 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <LinearLayout
+    <RelativeLayout
+        android:id="@+id/layout1"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -17,13 +18,14 @@
             android:layout_marginBottom="10dp"
             android:gravity="center_horizontal"
             android:text="문의 사항 작성"
-            android:textSize="50dp" />
+            android:textSize="50sp" />
 
         <TextView
             android:id="@+id/text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="20dp"
+            android:layout_below="@id/request"
+            android:layout_marginStart="20dp"
             android:layout_marginBottom="10dp"
             android:text="내용"
             android:textSize="25sp" />
@@ -32,6 +34,7 @@
             android:id="@+id/titleInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@id/text"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
             android:hint="제목을 입력해주세요." />
@@ -40,6 +43,7 @@
             android:id="@+id/textInput"
             android:layout_width="match_parent"
             android:layout_height="150dp"
+            android:layout_below="@id/titleInput"
             android:layout_marginLeft="15dp"
             android:layout_marginRight="15dp"
             android:layout_marginBottom="30dp"
@@ -50,7 +54,8 @@
             android:id="@+id/photo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="20dp"
+            android:layout_below="@id/textInput"
+            android:layout_marginStart="20dp"
             android:layout_marginBottom="10dp"
             android:text="사진"
             android:textSize="25sp" />
@@ -59,23 +64,26 @@
             android:id="@+id/photoButton"
             android:layout_width="100dp"
             android:layout_height="150dp"
-            android:layout_marginLeft="15dp"
+            android:layout_below="@id/photo"
+            android:layout_marginStart="15dp"
             android:scaleType="fitCenter"
             android:src="@drawable/plus_image" />
 
-        <LinearLayout
+        <RelativeLayout
+            android:id="@+id/layout2"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="right">
+            android:layout_height="match_parent">
 
             <Button
                 android:id="@+id/apply"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="bottom"
-                android:layout_marginRight="20dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentBottom="true"
+                android:layout_marginEnd="20dp"
                 android:layout_marginBottom="10dp"
                 android:text="신청" />
-        </LinearLayout>
-    </LinearLayout>
+
+        </RelativeLayout>
+    </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>
