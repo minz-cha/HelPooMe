@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
 
     val REQUEST_PERMISSION_CODE = 1
     val DEFAULT_ZOOM_LEVEL = 17f
-    val CITY_HALL = LatLng(37.658801, 126.775034)
+    val CITY_HALL = LatLng(37.340378, 126.733848)
     var googleMap: GoogleMap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,13 +96,8 @@ class MainActivity : AppCompatActivity() {
 
             when {
                 checkPermissions() -> {
+                    it.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
                     it.isMyLocationEnabled = true
-                    it.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(
-                            getMyLocation(),
-                            DEFAULT_ZOOM_LEVEL
-                        )
-                    )
                 }
                 else -> {
                     it.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
@@ -158,9 +153,8 @@ class MainActivity : AppCompatActivity() {
     val bitmap by lazy {
         val bitmap = ResourcesCompat.getDrawable(resources,
             R.drawable.ic_baseline_person_pin_circle_24,
-            null)
-            ?.toBitmap()
-        Bitmap.createScaledBitmap(bitmap!!, 100, 100, false)
+            null)?.toBitmap()
+        Bitmap.createScaledBitmap(bitmap!!, 64, 64, false)
     }
 
     fun JSONArray.merge(anotherArray: JSONArray) {
@@ -171,16 +165,16 @@ class MainActivity : AppCompatActivity() {
 
     fun readData(startIndex: Int, lastIndex: Int): JSONObject {
         val url =
-            URL("https://openapi.gg.go.kr/Publtolt?" + "${API_KEY}&Type=json&${startIndex}&${lastIndex}")
+            URL("https://openapi.gg.go.kr/Publtolt?KEY=" + "${API_KEY}&Type=json&pIndex=${startIndex}&pSize=${lastIndex}")
         val connection = url.openConnection()
         val data = connection.getInputStream().readBytes().toString(charset("UTF-8"))
         return JSONObject(data)
     }
 
+    @SuppressLint("StaticFieldLeak")
     inner class ToiletReadTask : AsyncTask<Void, JSONArray, String>() {
 
         override fun onPreExecute() {
-
             googleMap?.clear()
             toilets = JSONArray()
         }
@@ -188,43 +182,45 @@ class MainActivity : AppCompatActivity() {
         override fun doInBackground(vararg params: Void?): String {
 
             val step = 1000
-            var startIndex = 1
+            var startIndex = 3
             var lastIndex = step
-            var totalCount = 0
+//            var totalCount = 0
 
             do {
                 if (isCancelled) break
 
-                if (totalCount != 0) {
-                    startIndex += step
-                    lastIndex += step
-                }
                 val jsonObject = readData(startIndex, lastIndex)
 
                 val check1 = jsonObject.getJSONArray("Publtolt")
-                val row = check1.getJSONObject(1).getJSONArray("row")
-
-                for (i in 0 until row.length()) {
-                    val name2 = row.getJSONObject(i)
-                    Log.d("objectCheck", name2.getString("REFINE_WGS84_LOGT"))
-                }
-
-                totalCount = row.length()
-
                 val rows = check1.getJSONObject(1).getJSONArray("row")
+
+//                totalCount = rows.length()
                 toilets.merge(rows)
                 publishProgress(rows)
 
-            } while (lastIndex < totalCount)
+                startIndex += 1
+
+            } while (startIndex < 10)
 
             return "complete"
         }
 
         override fun onProgressUpdate(vararg values: JSONArray?) {
             val array = values[0]
+
             array?.let {
                 for (i in 0 until array.length()) {
-                    addMarkers(array.getJSONObject(i))
+                    val json = array.getJSONObject(i)
+                    val address = json.getString("REFINE_LOTNO_ADDR")
+                    val lat: String? = json.getString("REFINE_WGS84_LAT") ?: continue
+
+                    if (lat != "" && lat != "null") {
+                        if (address.contains("경기도 시흥시", true)) {
+                            addMarkers(array.getJSONObject(i))
+                            Log.d("objectCheck", array.getJSONObject(i).getString("PBCTLT_PLC_NM"))
+                            Log.d("위도Check", array.getJSONObject(i).getString("REFINE_WGS84_LAT"))
+                        }
+                    }
                 }
             }
         }
@@ -249,10 +245,10 @@ class MainActivity : AppCompatActivity() {
                 MarkerOptions()
                     .position(LatLng(toilet.getDouble("REFINE_WGS84_LAT"),
                         toilet.getDouble("REFINE_WGS84_LOGT")))
-                    .title(toilet.getString("MANAGE_INST_NM"))
-                    .snippet(toilet.getString("REFINE_ROADNM_ADDR"))
+                    .title(toilet.getString("PBCTLT_PLC_NM"))
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
             )
         }
+        Log.d("addCheck", "마커 추가되는지 테스트")
     }
 }
