@@ -19,6 +19,7 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONArray
@@ -26,6 +27,9 @@ import org.json.JSONObject
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
+
+    lateinit var myAdpater: MyAdapater
+    val datas = mutableListOf<DataClass>()
 
     val PERMISSIONS = arrayOf(
         Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -62,6 +66,21 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
         }
         myLocationButton.setOnClickListener { onMyLocationButtonClick() }
+
+        initRecycler()
+    }
+
+    private fun initRecycler() {
+        myAdpater = MyAdapater(this)
+        recyView.adapter = myAdpater
+
+        datas.apply {
+            add(DataClass(name = "정왕역", address = "경기 시흥시 마유로418번길 15"))
+            add(DataClass(name = "한국공학대학교", address = "경기도 시흥시 산기대학로 237"))
+
+            myAdpater.datas = datas
+            myAdpater.notifyDataSetChanged()
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -102,6 +121,9 @@ class MainActivity : AppCompatActivity() {
                 else -> {
                     it.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
                 }
+            }
+            it.setOnMarkerClickListener { m ->
+                true
             }
         }
     }
@@ -154,7 +176,7 @@ class MainActivity : AppCompatActivity() {
         val bitmap = ResourcesCompat.getDrawable(resources,
             R.drawable.ic_baseline_person_pin_circle_24,
             null)?.toBitmap()
-        Bitmap.createScaledBitmap(bitmap!!, 64, 64, false)
+        Bitmap.createScaledBitmap(bitmap!!, 100, 100, false)
     }
 
     fun JSONArray.merge(anotherArray: JSONArray) {
@@ -201,7 +223,6 @@ class MainActivity : AppCompatActivity() {
                 startIndex += 1
 
             } while (startIndex < 10)
-
             return "complete"
         }
 
@@ -251,4 +272,5 @@ class MainActivity : AppCompatActivity() {
         }
         Log.d("addCheck", "마커 추가되는지 테스트")
     }
+
 }
