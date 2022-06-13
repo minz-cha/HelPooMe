@@ -32,9 +32,11 @@ class MainActivity : AppCompatActivity() {
         var wc = ""
         var dp = ""
         var call = ""
+        var divTol = ""
+        lateinit var myAdpater: MyAdapater
     }
 
-    lateinit var myAdpater: MyAdapater
+    //    lateinit var myAdpater: MyAdapater
     val datas = mutableListOf<DataClass>()
 //    lateinit var dbHelper: DBHelper
 //    lateinit var sqlDB: SQLiteDatabase
@@ -84,13 +86,8 @@ class MainActivity : AppCompatActivity() {
         myAdpater = MyAdapater(this)
         recyView.adapter = myAdpater
 
-        datas.apply {
-            add(DataClass(name = "정왕역", address = "경기 시흥시 마유로418번길 15"))
-            add(DataClass(name = "한국공학대학교", address = "경기도 시흥시 산기대학로 237"))
-
-            myAdpater.datas = datas
-            myAdpater.notifyDataSetChanged()
-        }
+        myAdpater.datas = datas
+        myAdpater.notifyDataSetChanged()
     }
 
     override fun onRequestPermissionsResult(
@@ -252,8 +249,9 @@ class MainActivity : AppCompatActivity() {
                         time = m.title!!.split('&')[2]
                         wc = m.title!!.split('&')[3]
                         call = m.title!!.split('&')[5]
+                        divTol = m.title!!.split('&')[6]
 
-                        if(m.title!!.split('&')[4] == "0"){
+                        if (m.title!!.split('&')[4] == "0") {
                             dp = "N"
                         } else {
                             dp = "Y"
@@ -289,11 +287,12 @@ class MainActivity : AppCompatActivity() {
                         toilet.getDouble("REFINE_WGS84_LOGT")))
                     .title(toilet.getString("PBCTLT_PLC_NM") + "&" +
                             toilet.getString("REFINE_LOTNO_ADDR") + "&" +
-                            toilet.getString("MALE_FEMALE_TOILET_YN") + "&" +
+                            toilet.getString("OPEN_TM_INFO") + "&" +
                             toilet.getString("MALE_FEMALE_TOILET_YN") + "&" +
                             toilet.getInt("MALE_DSPSN_WTRCLS_CNT") + toilet.getInt("MALE_DSPSN_UIL_CNT") + toilet.getInt(
                         "FEMALE_DSPSN_WTRCLS_CNT") + "&" +
-                            toilet.getString("MANAGE_INST_TELNO"))
+                            toilet.getString("MANAGE_INST_TELNO") + "&" +
+                            toilet.getString("PUBLFACLT_DIV_NM"))
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
 
             )
