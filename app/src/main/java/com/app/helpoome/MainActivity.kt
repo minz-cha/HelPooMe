@@ -9,7 +9,6 @@ import android.location.Location
 import android.location.LocationManager
 import android.os.AsyncTask
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -19,7 +18,6 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONArray
@@ -27,9 +25,20 @@ import org.json.JSONObject
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        var name = ""
+        var address = ""
+        var time = ""
+        var wc = ""
+        var dp = ""
+        var call = ""
+    }
 
     lateinit var myAdpater: MyAdapater
     val datas = mutableListOf<DataClass>()
+//    lateinit var dbHelper: DBHelper
+//    lateinit var sqlDB: SQLiteDatabase
+//    var imm: InputMethodManager? = null
 
     val PERMISSIONS = arrayOf(
         Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -45,6 +54,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+//        imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+//        dbHelper = DBHelper.getInstance(this)
+
         tabHost.setup()
 
         var tabSpecMap = tabHost.newTabSpec("tabMap").setIndicator("화장실 찾기")
@@ -55,7 +67,6 @@ class MainActivity : AppCompatActivity() {
         tabSpecMy.setContent(R.id.tabMy)
         tabHost.addTab(tabSpecMy)
 
-        // 최초 탭 지정
         tabHost.currentTab = 0
 
         mapView.onCreate(savedInstanceState)
@@ -66,7 +77,6 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, PERMISSIONS, REQUEST_PERMISSION_CODE)
         }
         myLocationButton.setOnClickListener { onMyLocationButtonClick() }
-
         initRecycler()
     }
 
@@ -121,9 +131,6 @@ class MainActivity : AppCompatActivity() {
                 else -> {
                     it.moveCamera(CameraUpdateFactory.newLatLngZoom(CITY_HALL, DEFAULT_ZOOM_LEVEL))
                 }
-            }
-            it.setOnMarkerClickListener { m ->
-                true
             }
         }
     }
@@ -206,17 +213,14 @@ class MainActivity : AppCompatActivity() {
             val step = 1000
             var startIndex = 3
             var lastIndex = step
-//            var totalCount = 0
 
             do {
                 if (isCancelled) break
 
                 val jsonObject = readData(startIndex, lastIndex)
-
                 val check1 = jsonObject.getJSONArray("Publtolt")
                 val rows = check1.getJSONObject(1).getJSONArray("row")
 
-//                totalCount = rows.length()
                 toilets.merge(rows)
                 publishProgress(rows)
 
@@ -228,22 +232,39 @@ class MainActivity : AppCompatActivity() {
 
         override fun onProgressUpdate(vararg values: JSONArray?) {
             val array = values[0]
-
             array?.let {
                 for (i in 0 until array.length()) {
                     val json = array.getJSONObject(i)
-                    val address = json.getString("REFINE_LOTNO_ADDR")
-                    val lat: String? = json.getString("REFINE_WGS84_LAT") ?: continue
+                    var lat: String? = json.getString("REFINE_WGS84_LAT") ?: continue
 
                     if (lat != "" && lat != "null") {
-                        if (address.contains("경기도 시흥시", true)) {
+                        if (json.getString("REFINE_LOTNO_ADDR").contains("경기도 시흥시", true)) {
                             addMarkers(array.getJSONObject(i))
-                            Log.d("objectCheck", array.getJSONObject(i).getString("PBCTLT_PLC_NM"))
-                            Log.d("위도Check", array.getJSONObject(i).getString("REFINE_WGS84_LAT"))
                         }
+                    }
+
+                    googleMap?.setOnMarkerClickListener { m ->
+                        val bottomSheet = BottomFragment()
+                        // 마커는 좌표값
+//                        Toast.makeText(applicationContext, "${m.title}", Toast.LENGTH_SHORT).show()
+                        name = m.title!!.split('&')[0]
+                        address = m.title!!.split('&')[1]
+                        time = m.title!!.split('&')[2]
+                        wc = m.title!!.split('&')[3]
+                        call = m.title!!.split('&')[5]
+
+                        if(m.title!!.split('&')[4] == "0"){
+                            dp = "N"
+                        } else {
+                            dp = "Y"
+                        }
+
+                        bottomSheet.show(supportFragmentManager, bottomSheet.tag)
+                        true
                     }
                 }
             }
+
         }
     }
 
@@ -266,11 +287,16 @@ class MainActivity : AppCompatActivity() {
                 MarkerOptions()
                     .position(LatLng(toilet.getDouble("REFINE_WGS84_LAT"),
                         toilet.getDouble("REFINE_WGS84_LOGT")))
-                    .title(toilet.getString("PBCTLT_PLC_NM"))
+                    .title(toilet.getString("PBCTLT_PLC_NM") + "&" +
+                            toilet.getString("REFINE_LOTNO_ADDR") + "&" +
+                            toilet.getString("MALE_FEMALE_TOILET_YN") + "&" +
+                            toilet.getString("MALE_FEMALE_TOILET_YN") + "&" +
+                            toilet.getInt("MALE_DSPSN_WTRCLS_CNT") + toilet.getInt("MALE_DSPSN_UIL_CNT") + toilet.getInt(
+                        "FEMALE_DSPSN_WTRCLS_CNT") + "&" +
+                            toilet.getString("MANAGE_INST_TELNO"))
                     .icon(BitmapDescriptorFactory.fromBitmap(bitmap))
+
             )
         }
-        Log.d("addCheck", "마커 추가되는지 테스트")
     }
-
 }
